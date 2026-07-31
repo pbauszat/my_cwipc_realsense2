@@ -25,7 +25,7 @@
 #include "RS2Config.hpp"
 #include "RS2BaseCamera.hpp"
 
-RS2BaseCamera::RS2BaseCamera(rs2::context& ctx, RS2CaptureConfig& configuration, RS2CaptureMetadataConfig& metadata, int camera_index)
+RS2BaseCamera::RS2BaseCamera(rs2::context& ctx, RS2CaptureConfig& configuration, RS2CaptureMetadataConfig const& metadata, int camera_index)
 : CwipcBaseCamera("cwipc_realsense::RS2BaseCamera: " + configuration.all_camera_configs[camera_index].serial, "realsense2"),
   _pointSize(0), 
   _camera_index(camera_index),
@@ -36,7 +36,7 @@ RS2BaseCamera::RS2BaseCamera(rs2::context& ctx, RS2CaptureConfig& configuration,
   _filtering(configuration.filtering),
   _processing(configuration.processing),
   _hardware(configuration.hardware),
-  _metadata(_metadata),
+  _metadata(metadata),
   _current_pcl_pointcloud(nullptr),
   _processing_frame_queue(1),
   _camera_pipeline(ctx),
