@@ -79,7 +79,7 @@ int RS2BaseCapture::get_camera_count() {
 }
 
 bool RS2BaseCapture::config_reload(const char *configFilename) {
-    if (_control_thread != nullptr) {
+    if (_control_thread) {
         _log_error("config_reload: cannot reload configuration while capturer is running");
         return false;
     }
@@ -101,7 +101,9 @@ bool RS2BaseCapture::config_reload_fast(const char* configFilename) {
 
     RS2CaptureConfig new_configuration;
     bool success = false;
-    if (configFilename != nullptr) {
+    std::string config_filename;
+    if (configFilename) {
+        config_filename = std::string(configFilename);
         if (configFilename[0] == '{') {
             // Read from JSON string
             success = new_configuration.from_string(configFilename, type);
@@ -117,10 +119,23 @@ bool RS2BaseCapture::config_reload_fast(const char* configFilename) {
     }
 
     //
+    // Sanity check that the camera count remained the same
+    //
+    if (success) {
+        if (_configuration.all_camera_configs.size() != new_configuration.all_camera_configs.size()) {
+            success = false;
+            _log_error("Invalid configuration for fast reload (RS2) (size of cameras changed): '" + config_filename + "'");
+        }
+    }
+
+    //
     // If loading of the new configuration was successful copy over the suitable parts.
     //
 
     if (success) {
+        // Get lock on the safety mutex (waits until the control thread is done with the most recent frame processing)
+        std::unique_lock<std::mutex> my_safety_lock(_safety_mutex);
+
         // Copy over processing (should be safe)
         _configuration.processing = new_configuration.processing;
 
@@ -130,19 +145,14 @@ bool RS2BaseCapture::config_reload_fast(const char* configFilename) {
             camera->reload_filters();
         }
 
-        // Copy over camera transforms (camera count must match!)
-        if (_configuration.all_camera_configs.size() == new_configuration.all_camera_configs.size()) {
-            for (size_t i = 0; i < new_configuration.all_camera_configs.size(); ++i) {
-                _configuration.all_camera_configs[i].trafo = new_configuration.all_camera_configs[i].trafo;
-                _configuration.all_camera_configs[i].cameraposition = new_configuration.all_camera_configs[i].cameraposition;
-            }
-        }
-        else {
-            _log_error("Invalid configuration for fast reload (RS2) (size of cameras changed): '" + std::string(configFilename) + "'");
+        // Copy over camera transforms (camera count matches)
+        for (size_t i = 0; i < new_configuration.all_camera_configs.size(); ++i) {
+            _configuration.all_camera_configs[i].trafo = new_configuration.all_camera_configs[i].trafo;
+            _configuration.all_camera_configs[i].cameraposition = new_configuration.all_camera_configs[i].cameraposition;
         }
     }
     else {
-        _log_error("Invalid configuration for fast reload (RS2) (either not file or invalid JSON): '" + std::string(configFilename) + "'");
+        _log_error("Invalid configuration for fast reload (RS2) (either not file or invalid JSON): '" + config_filename + "'");
     }
     
     return success;
