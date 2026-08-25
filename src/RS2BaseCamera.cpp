@@ -368,10 +368,20 @@ void RS2BaseCamera::wait_for_pointcloud_processed() {
 
 void RS2BaseCamera::save_frameset_metadata(const std::unique_ptr<cwipc_pointcloud>& pc)
 {
-    if (!_metadata.want_depth && !_metadata.want_rgb && !_metadata.want_timestamps) return;
+    if (!_metadata.want_depth && !_metadata.want_rgb && !_metadata.want_timestamps && !_metadata.want_camera_specs) 
+        return;
+
     std::unique_lock<std::mutex> lock(_processing_mutex);
 
-    auto aligned_frameset = _current_processed_frameset;
+    // <<<<<<
+    // This would save the data from the previous frame!
+    // Two options:
+    // 1. Either move this AFTER the processing of the current frameset
+    // 2. Use the unprocessed frameset (this is consistent with Kinect and Orbbec)
+    // auto aligned_frameset = _current_processed_frameset;
+    auto aligned_frameset = _current_captured_frameset;
+    // >>>>>>>
+
     if (aligned_frameset.size() == 0) return;
     rs2::video_frame color_image = aligned_frameset.get_color_frame();
     rs2::video_frame depth_image = aligned_frameset.get_depth_frame();
