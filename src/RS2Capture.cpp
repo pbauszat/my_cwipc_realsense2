@@ -248,8 +248,17 @@ bool RS2Capture::_init_hardware_for_all_cameras() {
                 depth_sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1);
             }
         }
-        if (depth_sensor.supports(RS2_OPTION_LASER_POWER) && _configuration.hardware.laser_power >= 0) {
-            depth_sensor.set_option(RS2_OPTION_LASER_POWER, _configuration.hardware.laser_power);
+        try {
+            if (depth_sensor.supports(RS2_OPTION_LASER_POWER) && _configuration.hardware.laser_power >= 0) {
+                depth_sensor.set_option(RS2_OPTION_LASER_POWER, _configuration.hardware.laser_power);
+            }
+            else {
+                std::cout << "Laser power control is not supported on this sensor." << std::endl;
+            }
+        }
+        catch (const rs2::error& e) {
+            std::cerr << "RealSense error calling set_option(): " << e.what() << std::endl;
+            // Fallback: log error or try setting a default safe value like 0.f or 150.f
         }
     }
     return true;
