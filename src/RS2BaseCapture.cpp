@@ -487,10 +487,6 @@ void RS2BaseCapture::_control_thread_main() {
             cwipc_pcl_pointcloud pcl_pointcloud = new_cwipc_pcl_pointcloud();
             std::unique_ptr<cwipc_pointcloud> newPC(cwipc_from_pcl(pcl_pointcloud, timestamp, NULL, CWIPC_API_VERSION));
 
-            for (auto cam : _cameras) {
-                cam->save_frameset_metadata(newPC);
-            }
-
             if (_stopped) {
                 newPC->free();
                 newPC.reset();
@@ -534,6 +530,12 @@ void RS2BaseCapture::_control_thread_main() {
             else {
                 if (_configuration.debug) _log_debug("merged pointcloud is empty");
             }
+
+            // Step 6: Save meta-data from processed frameset
+            for (auto cam : _cameras) {
+                cam->save_frameset_metadata(_mergedPC);
+            }
+
             // Signal that a new mergedPC is available. (Note that we acquired the mutex earlier)
             _mergedPC_is_fresh = true;
             _mergedPC_want_new = false;

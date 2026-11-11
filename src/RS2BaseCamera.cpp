@@ -378,8 +378,8 @@ void RS2BaseCamera::save_frameset_metadata(const std::unique_ptr<cwipc_pointclou
     // Two options:
     // 1. Either move this AFTER the processing of the current frameset
     // 2. Use the unprocessed frameset (this is consistent with Kinect and Orbbec)
-    // auto aligned_frameset = _current_processed_frameset;
-    auto aligned_frameset = _current_captured_frameset;
+    const auto aligned_frameset = _current_processed_frameset;
+    // const auto aligned_frameset = _current_captured_frameset;
     // >>>>>>>
 
     if (aligned_frameset.size() == 0) return;
